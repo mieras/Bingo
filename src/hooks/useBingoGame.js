@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PRIZES, TOTAL_NUMBERS, GRID_SIZE, DRAW_INTERVAL } from '../utils/constants';
+import { PRIZES, TOTAL_NUMBERS, GRID_SIZE, DRAW_INTERVAL, MAX_DRAWN_BALLS } from '../utils/constants';
 
 export const useBingoGame = () => {
-    const [gameState, setGameState] = useState('IDLE'); // IDLE, PLAYING, WON, LOST
+    const [gameState, setGameState] = useState('IDLE'); // IDLE, PLAYING, WON, LOST, FINISHED
     const [bingoCard, setBingoCard] = useState([]);
     const [drawnBalls, setDrawnBalls] = useState([]);
     const [currentBall, setCurrentBall] = useState(null);
@@ -23,21 +23,23 @@ export const useBingoGame = () => {
         return Array.from(nums);
     };
 
+    const [maxBalls, setMaxBalls] = useState(MAX_DRAWN_BALLS);
+
     const startGame = useCallback(() => {
-        // For 50% win chance: only use numbers 1-18 for the card
-        // This way, when drawing all 36 numbers, there's a 50% chance all card numbers are drawn
-        const useFirstHalf = Math.random() < 0.5;
+        // 50% chance to win
+        const isWinner = Math.random() < 0.5;
 
-        let cardNumbers;
-        if (useFirstHalf) {
-            // Generate 15 numbers from 1 to 18
-            cardNumbers = generateNumbers(15, 18, 1);
-        } else {
-            // Generate 15 numbers from 19 to 36
-            cardNumbers = generateNumbers(15, TOTAL_NUMBERS, 19);
-        }
+        // If winner, we go up to MAX_DRAWN_BALLS (36).
+        // If loser, we stop earlier (e.g. at 33) to ensure they don't get the last few balls needed.
+        // Since we rig the deck to put missing numbers in the last 3 spots (index 0-2),
+        // stopping at 33 (leaving 3 balls) guarantees a loss.
+        const currentMaxBalls = isWinner ? MAX_DRAWN_BALLS : 33;
+        setMaxBalls(currentMaxBalls);
 
-        // Fixed empty slot at index 10 (Row 3, Col 3, 0-indexed)
+        // Generate Bingo Card (15 numbers from 1-36)
+        const cardNumbers = generateNumbers(15, TOTAL_NUMBERS);
+
+        // Fixed empty slot at index 10
         const emptyIndex = 10;
         const grid = [];
         let numIdx = 0;
@@ -50,12 +52,54 @@ export const useBingoGame = () => {
         }
         setBingoCard(grid);
 
-        // Prepare Draw Deck - all 36 numbers shuffled
-        const deck = Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1);
-        for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [deck[i], deck[j]] = [deck[j], deck[i]];
+        // Prepare Draw Deck
+        const allNumbers = Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1);
+        const cardSet = new Set(cardNumbers);
+        const nonCardNumbers = allNumbers.filter(n => !cardSet.has(n));
+
+        let deck = [];
+
+        if (isWinner) {
+            // Winner: All 15 card numbers must be within the first 36 balls.
+            // Since we draw all 36 (if needed), and the card is a subset of 1-36,
+            // a simple shuffle of all numbers is sufficient to guarantee a win EVENTUALLY.
+            // However, to support prizes for specific ball counts, we might want to ensure
+            // they don't win TOO early or TOO late if we wanted to rig that.
+            // But for now, random shuffle is fine, as long as we draw enough balls.
+
+            // Actually, if we want to guarantee a win within 36 balls, just shuffling 1-36 is enough.
+            // But we need to make sure we don't accidentally put all card numbers in the first 18 balls
+            // if we want to avoid only high prizes? The user didn't ask for that.
+            // Just "50% chance to win".
+
+            deck = allNumbers.sort(() => Math.random() - 0.5);
+
+        } else {
+            // Loser: At least 1 card number must be in the last 3 balls (which won't be drawn).
+            // We stop at 33. The last 3 balls (index 0-2) are never drawn.
+
+            const numMissing = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3 missing numbers
+
+            const shuffledCard = cardNumbers.sort(() => Math.random() - 0.5);
+            const missingCardNums = shuffledCard.slice(0, numMissing);
+            const presentCardNums = shuffledCard.slice(numMissing);
+
+            const shuffledNonCard = nonCardNumbers.sort(() => Math.random() - 0.5);
+            const extraMissing = shuffledNonCard.slice(0, 3 - numMissing);
+            const presentNonCard = shuffledNonCard.slice(3 - numMissing);
+
+            // Not drawn pool (size 3) - goes to index 0-2 (end of deck, last to be popped? No, wait.)
+            // pop() takes from the END.
+            // So "Last to be drawn" are at index 0.
+            // So index 0-2 are the ones remaining when we stop at 33.
+
+            const notDrawnPool = [...missingCardNums, ...extraMissing];
+            const drawnPool = [...presentCardNums, ...presentNonCard];
+            const shuffledDrawnPool = drawnPool.sort(() => Math.random() - 0.5);
+
+            deck = [...notDrawnPool, ...shuffledDrawnPool];
         }
+
         drawDeckRef.current = deck;
 
         setDrawnBalls([]);
@@ -74,14 +118,9 @@ export const useBingoGame = () => {
     }, [bingoCard]);
 
     const drawNextBall = useCallback(() => {
-        if (drawDeckRef.current.length === 0) {
-            setGameState('FINISHED'); // Should not happen if win is guaranteed at 50%?
-            // Prompt: "Make sure the change of having bing is at least 50%"
-            // This implies I might need to rig the deck or card?
-            // Or just normal probability?
-            // With 36 numbers and 15 on card, drawing all 36 guarantees a win.
-            // So eventually everyone wins.
-            // The prize depends on WHEN you win.
+        // Stop if we reached max balls or deck is empty
+        if (drawnBalls.length >= maxBalls || drawDeckRef.current.length === 0) {
+            setGameState('FINISHED');
             return;
         }
 
@@ -119,7 +158,7 @@ export const useBingoGame = () => {
             timestamp: Date.now()
         }, ...prev]);
 
-    }, [drawnBalls, currentBall, bingoCard, checkedNumbers]);
+    }, [drawnBalls, currentBall, bingoCard, checkedNumbers, maxBalls]);
 
     // Game Loop
     useEffect(() => {
@@ -152,7 +191,8 @@ export const useBingoGame = () => {
             setGameState('WON');
             // Calculate prize based on drawnBalls count
             const count = drawnBalls.length;
-            const wonPrize = PRIZES.find(p => p.balls === count);
+            const lookupCount = Math.max(count, 19); // Minimum prize at 19 balls
+            const wonPrize = PRIZES.find(p => p.balls === lookupCount);
             setPrize(wonPrize);
         }
     }, [checkedNumbers, gameState, checkWin, drawnBalls.length]);
@@ -164,8 +204,6 @@ export const useBingoGame = () => {
         if (drawnBalls.includes(number)) {
             // If the clicked number is the CURRENT ball, we can trigger a "fast forward" 
             // to fill all other currently drawn numbers that are on the card.
-            // "would be nice if you press klik that your cards fill automatically based on the correct numbers with the draw"
-            // This sounds like: if I click a valid number, auto-check ALL valid numbers that are currently drawn?
 
             const newChecked = new Set(checkedNumbers);
             newChecked.add(number);
@@ -178,6 +216,9 @@ export const useBingoGame = () => {
             });
 
             setCheckedNumbers(newChecked);
+
+            // Immediately draw the next ball to keep the pace
+            drawNextBall();
         } else {
             // Wiggle
             setWigglingNumber(number);
@@ -190,11 +231,17 @@ export const useBingoGame = () => {
 
         clearInterval(timerRef.current);
 
-        // Draw all remaining balls
-        const remaining = [...drawDeckRef.current];
-        const allDrawn = [...drawnBalls, ...remaining.reverse()]; // reverse because we pop
+        // Draw remaining balls UP TO maxBalls
+        const currentDeck = [...drawDeckRef.current];
+        const ballsNeeded = maxBalls - drawnBalls.length;
 
-        // Auto-check all numbers on card
+        // We need to take balls from the END of currentDeck because we use pop()
+        // So we take the LAST 'ballsNeeded' elements
+        const remainingToDraw = currentDeck.slice(-ballsNeeded).reverse();
+
+        const allDrawn = [...drawnBalls, ...remainingToDraw];
+
+        // Auto-check all numbers on card that are in allDrawn
         const newChecked = new Set(checkedNumbers);
         bingoCard.forEach(num => {
             if (num && allDrawn.includes(num)) {
@@ -206,23 +253,31 @@ export const useBingoGame = () => {
         setDrawnBalls(allDrawn);
         setCurrentBall(allDrawn[allDrawn.length - 1]);
 
-        // Calculate Prize (based on when the LAST number was drawn)
-        // Find the index of the last number needed to complete the card
-        const cardNumbers = bingoCard.filter(n => n !== null);
-        let maxIndex = -1;
-        cardNumbers.forEach(num => {
-            const idx = allDrawn.indexOf(num);
-            if (idx > maxIndex) maxIndex = idx;
-        });
+        // Check if won
+        const numbersToWin = bingoCard.filter(n => n !== null);
+        const isWin = numbersToWin.every(n => newChecked.has(n));
 
-        // Balls count = index + 1
-        const ballsCount = maxIndex + 1;
-        const wonPrize = PRIZES.find(p => p.balls === ballsCount);
+        if (isWin) {
+            // Calculate Prize
+            // Find the index of the last number needed to complete the card
+            let maxIndex = -1;
+            numbersToWin.forEach(num => {
+                const idx = allDrawn.indexOf(num);
+                if (idx > maxIndex) maxIndex = idx;
+            });
 
-        setPrize(wonPrize);
-        setGameState('WON'); // Or FINISHED? Let's use WON to trigger result screen
+            // Balls count = index + 1
+            const ballsCount = maxIndex + 1;
+            const lookupCount = Math.max(ballsCount, 19);
+            const wonPrize = PRIZES.find(p => p.balls === lookupCount);
 
-    }, [gameState, drawnBalls, bingoCard, checkedNumbers]);
+            setPrize(wonPrize);
+            setGameState('WON');
+        } else {
+            setGameState('FINISHED'); // No Win
+        }
+
+    }, [gameState, drawnBalls, bingoCard, checkedNumbers, maxBalls]);
 
     return {
         gameState,

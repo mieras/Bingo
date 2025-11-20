@@ -23,3 +23,4 @@ export const TOTAL_NUMBERS = 36;
 export const GRID_SIZE = 4;
 export const DRAW_INTERVAL = 4000; // 4 seconds
 export const HIGHLIGHT_DURATION = 2000; // Last 2 seconds
+export const MAX_DRAWN_BALLS = 36; // Game ends after 33 balls
