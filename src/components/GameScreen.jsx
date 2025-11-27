@@ -64,13 +64,13 @@ const GameScreen = ({
                                                 onClick={() => onCardClick(num)}
                                                 disabled={!num || isChecked}
                                                 className={`
-                          w-full h-full flex items-center justify-center text-3xl md:text-5xl font-bold transition-all duration-200 relative z-10
-                          ${isChecked ? 'text-bingo-number opacity-70' : 'text-bingo-number hover:bg-gray-50'}
+                          w-full h-full flex items-center justify-center text-4xl md:text-5xl font-bold transition-all duration-200 relative z-10
+                          ${isChecked ? 'opacity-70 text-bingo-number' : 'text-bingo-number hover:bg-gray-50'}
                           ${isWiggling ? 'text-red-500 animate-wiggle' : ''}`}
                                             >
                                                 <span className="relative z-10">{num}</span>
                                                 {showMatchHint && (
-                                                    <div className="absolute inset-0 z-0 flex items-center justify-center" style={{ backgroundColor: '#DDF5F7' }}>
+                                                    <div className="flex absolute inset-0 z-0 justify-center items-center" style={{ backgroundColor: '#DDF5F7' }}>
                                                     </div>
                                                 )}
                                                 {isChecked && (
@@ -107,7 +107,7 @@ const GameScreen = ({
 
                         <button
                             onClick={onSkip}
-                            className="px-6 py-2 text-xs tracking-wider uppercase border border-gray-300 transition-all duration-200 md:text-sm hover:bg-gray-50 hover:border-gray-400 text-bingo-text rounded-md relative active:translate-y-0 shadow-sm hover:shadow-md w-fit ml-auto md:mx-auto"
+                            className="relative px-6 py-2 ml-auto text-xs tracking-wider uppercase rounded-md border border-gray-300 shadow-sm transition-all duration-200 md:text-sm hover:bg-gray-50 hover:border-gray-400 text-bingo-text active:translate-y-0 hover:shadow-md w-fit md:mx-auto"
                         >
                             Results
                         </button>
