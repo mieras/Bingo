@@ -28,8 +28,8 @@ const ResultScreen = ({ prize, history, bingoCard, checkedNumbers, panelColor })
   }, [prize]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-white border-2 border-gray-200 p-8 md:p-12 max-w-4xl w-full relative flex flex-col md:flex-row gap-8 items-center max-h-[90vh] overflow-y-auto animate-scale-up shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm md:p-4 animate-fade-in">
+      <div className="bg-white border-2 border-gray-200 p-8 md:p-12 md:max-w-4xl w-full h-full md:h-auto md:max-h-[90vh] relative flex flex-col md:flex-row gap-8 items-center overflow-y-auto animate-scale-up shadow-2xl">
 
         {/* Left: Result Info */}
         <div className="flex-1 text-center md:text-left">
@@ -49,9 +49,6 @@ const ResultScreen = ({ prize, history, bingoCard, checkedNumbers, panelColor })
                   <span className="text-2xl font-black text-bingo-text">{prize.balls}</span>
                 </div>
               </div>
-              <p className="text-sm text-bingo-text/70 italic">
-                "{prize.label}"
-              </p>
             </div>
           ) : (
             <div className="border border-gray-200 p-6 bg-gray-50">
