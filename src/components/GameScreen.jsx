@@ -211,16 +211,28 @@ const GameScreen = ({
                                 </div>
 
                                 {/* Ball Number - Rechts */}
+                                {/* Ball Number - Rechts */}
                                 <div className="w-16 flex justify-center flex-shrink-0">
-                                    <div
-                                        className={`
-                                            flex justify-center items-center font-bold rounded-full leading-none text-box-trim
-                                            ${isNewest ? 'w-16 h-16 text-3xl text-white shadow-md animate-roll-in' : 'w-12 h-12 text-xl text-gray-500  bg-gray-100'}
-                                        `}
-                                        style={isNewest ? { backgroundColor: getBallColor(item.ball) } : {}}
-                                    >
-                                        {item.ball}
-                                    </div>
+                                    {isNewest ? (
+                                        <div
+                                            className="w-16 h-16 rounded-full shadow-lg animate-roll-in flex items-center justify-center relative"
+                                            style={{
+                                                backgroundColor: getBallColor(item.ball),
+                                                backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.2) 100%)',
+                                                boxShadow: '0 4px 8px rgba(0,0,0,0.2), inset -2px -2px 6px rgba(0,0,0,0.2)'
+                                            }}
+                                        >
+                                            {/* White Badge Container */}
+                                            <div className="w-10 h-10 bg-white rounded-[12px] flex flex-col items-center justify-center shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)] relative z-10">
+                                                <span className="text-2xl font-bold text-gray-800 leading-none pt-1 text-box-trim">{item.ball}</span>
+                                                <div className="w-3 h-[2px] bg-gray-800 mt-[px] rounded-full opacity-80"></div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="w-12 h-12 flex justify-center items-center font-bold rounded-full leading-none text-box-trim text-xl text-gray-500 bg-gray-100">
+                                            {item.ball}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
