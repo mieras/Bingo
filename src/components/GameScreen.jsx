@@ -20,12 +20,15 @@ const GameScreen = ({
     onCardClick,
     onSkip,
     isSkipping,
+    skipOutcome,
     progress,
     panelColor,
     gameState,
     prize
 }) => {
     const isGameFinished = gameState === 'WON' || gameState === 'FINISHED';
+    const showResult = isGameFinished || isSkipping;
+    const displayedPrize = isSkipping && skipOutcome ? skipOutcome.prize : prize;
 
     // Random kleur voor ballen (zelfde kleuren als background) - consistent per bal
     const panelColors = ['#AA167C', '#F39200', '#E73358', '#94C11F', '#009CBE'];
@@ -58,7 +61,7 @@ const GameScreen = ({
 
     // Confetti effect bij winst
     useEffect(() => {
-        if (prize && isGameFinished) {
+        if (displayedPrize && showResult) {
             const duration = 5 * 1000;
             const animationEnd = Date.now() + duration;
             const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
@@ -79,7 +82,7 @@ const GameScreen = ({
 
             return () => clearInterval(interval);
         }
-    }, [prize, isGameFinished]);
+    }, [displayedPrize, showResult]);
 
     return (
         <div className="flex flex-col w-full h-screen overflow-hidden transition-colors duration-500 relative" style={{ backgroundColor: panelColor }}>
@@ -113,8 +116,8 @@ const GameScreen = ({
                     WebkitOverflowScrolling: 'touch',
                 }}
             >
-                {isGameFinished ? (
-                    <GameResult prize={prize} />
+                {showResult ? (
+                    <GameResult prize={displayedPrize} />
                 ) : (
                     <GameHistory
                         history={history}
@@ -125,7 +128,7 @@ const GameScreen = ({
 
             <GameControls
                 onSkip={onSkip}
-                isGameFinished={isGameFinished}
+                isGameFinished={showResult}
                 isSkipping={isSkipping}
             />
         </div>

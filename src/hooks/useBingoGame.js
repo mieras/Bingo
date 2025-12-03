@@ -309,8 +309,8 @@ export const useBingoGame = () => {
         checkedNumbers,
         history,
         prize,
-        wigglingNumber,
         isSkipping,
+        skipOutcome: skipTarget ? { outcome: skipTarget.outcome, prize: skipTarget.prize } : null,
         startGame,
         handleCardClick,
         finishGame

@@ -15,6 +15,7 @@ function App() {
     prize,
     wigglingNumber,
     isSkipping,
+    skipOutcome,
     startGame,
     handleCardClick,
     finishGame
@@ -45,6 +46,7 @@ function App() {
           onCardClick={handleCardClick}
           onSkip={finishGame}
           isSkipping={isSkipping}
+          skipOutcome={skipOutcome}
           progress={progress}
           panelColor={panelColor}
           gameState={gameState}
