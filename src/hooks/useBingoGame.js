@@ -29,11 +29,8 @@ export const useBingoGame = () => {
         // 50% chance to win
         const isWinner = Math.random() < 0.5;
 
-        // If winner, we go up to MAX_DRAWN_BALLS (36).
-        // If loser, we stop earlier (e.g. at 33) to ensure they don't get the last few balls needed.
-        // Since we rig the deck to put missing numbers in the last 3 spots (index 0-2),
-        // stopping at 33 (leaving 3 balls) guarantees a loss.
-        const currentMaxBalls = isWinner ? MAX_DRAWN_BALLS : 33;
+        // Always draw all 36 balls
+        const currentMaxBalls = MAX_DRAWN_BALLS;
         setMaxBalls(currentMaxBalls);
 
         // Generate Bingo Card (15 numbers from 1-36)
@@ -75,8 +72,8 @@ export const useBingoGame = () => {
             deck = allNumbers.sort(() => Math.random() - 0.5);
 
         } else {
-            // Loser: At least 1 card number must be in the last 3 balls (which won't be drawn).
-            // We stop at 33. The last 3 balls (index 0-2) are never drawn.
+            // Loser: At least 1 card number must NOT be in the 36 balls drawn.
+            // We'll exclude 1-3 card numbers from the deck entirely.
 
             const numMissing = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3 missing numbers
 
@@ -85,19 +82,16 @@ export const useBingoGame = () => {
             const presentCardNums = shuffledCard.slice(numMissing);
 
             const shuffledNonCard = nonCardNumbers.sort(() => Math.random() - 0.5);
-            const extraMissing = shuffledNonCard.slice(0, 3 - numMissing);
-            const presentNonCard = shuffledNonCard.slice(3 - numMissing);
 
-            // Not drawn pool (size 3) - goes to index 0-2 (end of deck, last to be popped? No, wait.)
-            // pop() takes from the END.
-            // So "Last to be drawn" are at index 0.
-            // So index 0-2 are the ones remaining when we stop at 33.
+            // The deck will only have 36 - numMissing balls
+            // We need to fill it with presentCardNums + enough nonCardNumbers to make 36 total
+            const neededNonCard = 36 - presentCardNums.length;
+            const selectedNonCard = shuffledNonCard.slice(0, neededNonCard);
 
-            const notDrawnPool = [...missingCardNums, ...extraMissing];
-            const drawnPool = [...presentCardNums, ...presentNonCard];
+            const drawnPool = [...presentCardNums, ...selectedNonCard];
             const shuffledDrawnPool = drawnPool.sort(() => Math.random() - 0.5);
 
-            deck = [...notDrawnPool, ...shuffledDrawnPool];
+            deck = shuffledDrawnPool;
         }
 
         drawDeckRef.current = deck;
