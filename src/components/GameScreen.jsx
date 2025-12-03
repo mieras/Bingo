@@ -8,6 +8,7 @@ const GameScreen = ({
     currentBall,
     checkedNumbers,
     history,
+    drawnBalls, // Toegevoegd
     wigglingNumber,
     onCardClick,
     onSkip,
