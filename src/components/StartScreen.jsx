@@ -10,7 +10,7 @@ const StartScreen = ({ onStart }) => {
         <img
           src={logoImg}
           alt="VriendenLoterij Bingo"
-          className="w-48 mb-4 object-contain drop-shadow-sm"
+          className="w-48 mb-4 object-contain max-w-[160px] drop-shadow-sm"
         />
 
         {/* Intro Text */}
