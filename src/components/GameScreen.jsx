@@ -20,15 +20,12 @@ const GameScreen = ({
     onCardClick,
     onSkip,
     isSkipping,
-    skipOutcome,
     progress,
     panelColor,
     gameState,
     prize
 }) => {
     const isGameFinished = gameState === 'WON' || gameState === 'FINISHED';
-    const showResult = isGameFinished || isSkipping;
-    const displayedPrize = isSkipping && skipOutcome ? skipOutcome.prize : prize;
 
     // Random kleur voor ballen (zelfde kleuren als background) - consistent per bal
     const panelColors = ['#AA167C', '#F39200', '#E73358', '#94C11F', '#009CBE'];
@@ -59,9 +56,9 @@ const GameScreen = ({
         }
     }, [history.length]);
 
-    // Confetti effect bij winst
+    // Confetti effect bij winst - Pas als het spel echt klaar is (na skippen)
     useEffect(() => {
-        if (displayedPrize && showResult) {
+        if (prize && gameState === 'WON') {
             const duration = 5 * 1000;
             const animationEnd = Date.now() + duration;
             const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
@@ -82,7 +79,7 @@ const GameScreen = ({
 
             return () => clearInterval(interval);
         }
-    }, [displayedPrize, showResult]);
+    }, [prize, gameState]);
 
     return (
         <div className="flex flex-col w-full h-screen overflow-hidden transition-colors duration-500 relative" style={{ backgroundColor: panelColor }}>
@@ -116,8 +113,13 @@ const GameScreen = ({
                     WebkitOverflowScrolling: 'touch',
                 }}
             >
-                {showResult ? (
-                    <GameResult prize={displayedPrize} />
+                {isSkipping ? (
+                    <div className="flex flex-col items-center justify-center h-full animate-pulse">
+                        <div className="w-8 h-8 border-4 border-[#003884] border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-[#003884] font-bold uppercase tracking-wide text-sm">Resultaat ophalen...</p>
+                    </div>
+                ) : isGameFinished ? (
+                    <GameResult prize={prize} />
                 ) : (
                     <GameHistory
                         history={history}
@@ -128,7 +130,7 @@ const GameScreen = ({
 
             <GameControls
                 onSkip={onSkip}
-                isGameFinished={showResult}
+                isGameFinished={isGameFinished || isSkipping}
                 isSkipping={isSkipping}
             />
         </div>

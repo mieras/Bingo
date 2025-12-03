@@ -209,7 +209,7 @@ export const useBingoGame = () => {
                 timestamp: Date.now()
             }, ...prev]);
 
-        }, 50); // 50ms per ball (very fast)
+        }, 15); // 15ms per ball (super fast)
 
         return () => clearTimeout(timeout);
     }, [isSkipping, skipTarget, drawnBalls, bingoCard]);
