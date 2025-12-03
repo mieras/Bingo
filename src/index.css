@@ -157,9 +157,9 @@ body {
 }
 
 .btn-primary {
-  background: var(--vl-green);
+  background: #003884;
   color: #fff;
-  border: 2px solid var(--vl-green);
+  border: 2px solid #003884;
   padding: 0.75rem 2rem;
   font-size: 1rem;
   font-weight: 700;
@@ -167,12 +167,12 @@ body {
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.2s;
-  border-radius: 0.2em;
+  border-radius: 0.375rem;
 }
 
 .btn-primary:hover {
-  background: var(--ds-core-dark-green);
-  border-color: var(--ds-core-dark-green);
+  background: #002a66;
+  border-color: #002a66;
   color: #fff;
 }
 
