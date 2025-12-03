@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PRIZES, TOTAL_NUMBERS, GRID_SIZE, DRAW_INTERVAL, MAX_DRAWN_BALLS } from '../utils/constants';
+import { PRIZES, TOTAL_NUMBERS, GRID_SIZE, DRAW_INTERVAL, MAX_DRAWN_BALLS, SKIP_BALL_INTERVAL, SKIP_USE_EASING, SKIP_EASING_FACTOR } from '../utils/constants';
 
 export const useBingoGame = () => {
     const [gameState, setGameState] = useState('IDLE'); // IDLE, PLAYING, WON, LOST, FINISHED
@@ -187,6 +187,19 @@ export const useBingoGame = () => {
             return;
         }
 
+        // Calculate delay with easing (starts fast, ends slower for suspense)
+        let delay = SKIP_BALL_INTERVAL;
+
+        if (SKIP_USE_EASING) {
+            const totalBalls = skipTarget.balls.length;
+            const currentIndex = drawnBalls.length;
+            const progress = currentIndex / totalBalls; // 0 to 1
+
+            // Ease-out cubic: starts fast, ends slow
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            delay = SKIP_BALL_INTERVAL * (1 + easedProgress * SKIP_EASING_FACTOR);
+        }
+
         const timeout = setTimeout(() => {
             const nextBallIndex = drawnBalls.length;
             const nextBall = skipTarget.balls[nextBallIndex];
@@ -209,7 +222,7 @@ export const useBingoGame = () => {
                 timestamp: Date.now()
             }, ...prev]);
 
-        }, 15); // 15ms per ball (super fast)
+        }, delay);
 
         return () => clearTimeout(timeout);
     }, [isSkipping, skipTarget, drawnBalls, bingoCard]);
