@@ -88,26 +88,22 @@ const BingoCard = ({
                                                 preserveAspectRatio="xMidYMid meet"
                                             >
                                                 <defs>
-                                                    <linearGradient id={`stroke-mask-${idx}`} x1="0%" y1="100%" x2="100%" y2="0%">
-                                                        <stop offset="0%" stopColor="white" stopOpacity="0">
-                                                            <animate
-                                                                attributeName="stop-opacity"
-                                                                values="0;1;1"
-                                                                dur="0.3s"
-                                                                fill="freeze"
-                                                            />
-                                                        </stop>
-                                                        <stop offset="0%" stopColor="white" stopOpacity="1">
-                                                            <animate
-                                                                attributeName="offset"
-                                                                values="0;1"
-                                                                dur="0.3s"
-                                                                fill="freeze"
-                                                            />
-                                                        </stop>
-                                                    </linearGradient>
                                                     <mask id={`stroke-reveal-${idx}`}>
-                                                        <rect width="45" height="30" fill={`url(#stroke-mask-${idx})`} />
+                                                        <rect
+                                                            width="100"
+                                                            height="100"
+                                                            fill="white"
+                                                            x="-50"
+                                                            y="30"
+                                                        >
+                                                            <animate
+                                                                attributeName="y"
+                                                                from="30"
+                                                                to="-70"
+                                                                dur="0.3s"
+                                                                fill="freeze"
+                                                            />
+                                                        </rect>
                                                     </mask>
                                                 </defs>
                                                 <path
