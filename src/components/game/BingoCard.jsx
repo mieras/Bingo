@@ -68,8 +68,7 @@ const BingoCard = ({
                                     className={`
                                         w-full h-full flex items-center justify-center 
                                         text-3xl font-bold transition-all duration-200 relative
-                                        ${isChecked ? '' : 'hover:bg-gray-50 text-[#014087]'}
-                                        ${isWiggling ? 'text-red-500 animate-wiggle' : ''}
+                                        ${isWiggling ? 'text-red-500 animate-wiggle' : isChecked ? '' : 'hover:bg-gray-50 text-[#014087]'}
                                     `}
                                 >
                                     <span className={`relative z-10 ${isChecked ? 'text-[#014087]' : ''}`}>{num}</span>
