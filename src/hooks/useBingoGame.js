@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PRIZES, TOTAL_NUMBERS, GRID_SIZE, DRAW_INTERVAL, MAX_DRAWN_BALLS, SKIP_BALL_INTERVAL, SKIP_USE_EASING, SKIP_EASING_FACTOR } from '../utils/constants';
+import { PRIZES, TOTAL_NUMBERS, GRID_SIZE, DRAW_INTERVAL, MAX_DRAWN_BALLS, SKIP_BALL_INTERVAL, SKIP_USE_EASING, SKIP_EASING_TYPE, SKIP_EASING_FACTOR } from '../utils/constants';
 
 export const useBingoGame = () => {
     const [gameState, setGameState] = useState('IDLE'); // IDLE, PLAYING, WON, LOST, FINISHED
@@ -188,7 +188,7 @@ export const useBingoGame = () => {
             return;
         }
 
-        // Calculate delay with easing (starts fast, ends slower for suspense)
+        // Calculate delay with easing
         let delay = SKIP_BALL_INTERVAL;
 
         if (SKIP_USE_EASING) {
@@ -196,9 +196,33 @@ export const useBingoGame = () => {
             const currentIndex = drawnBalls.length;
             const progress = currentIndex / totalBalls; // 0 to 1
 
-            // Ease-out cubic: starts fast, ends slow
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            delay = SKIP_BALL_INTERVAL * (1 + easedProgress * SKIP_EASING_FACTOR);
+            let easedProgress;
+
+            switch (SKIP_EASING_TYPE) {
+                case 'in':
+                    // Ease-in cubic: starts slow, gets faster
+                    easedProgress = Math.pow(progress, 3);
+                    delay = SKIP_BALL_INTERVAL * (1 + (1 - easedProgress) * SKIP_EASING_FACTOR);
+                    break;
+
+                case 'out':
+                    // Ease-out cubic: starts fast, ends slow
+                    easedProgress = 1 - Math.pow(1 - progress, 3);
+                    delay = SKIP_BALL_INTERVAL * (1 + easedProgress * SKIP_EASING_FACTOR);
+                    break;
+
+                case 'in-out':
+                    // Ease-in-out cubic: slow-fast-slow
+                    easedProgress = progress < 0.5
+                        ? 4 * Math.pow(progress, 3)
+                        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                    delay = SKIP_BALL_INTERVAL * (1 + Math.abs(0.5 - easedProgress) * 2 * SKIP_EASING_FACTOR);
+                    break;
+
+                default:
+                    // Linear (no easing)
+                    delay = SKIP_BALL_INTERVAL;
+            }
         }
 
         const timeout = setTimeout(() => {
