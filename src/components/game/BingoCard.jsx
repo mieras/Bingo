@@ -67,11 +67,11 @@ const BingoCard = ({
                                     disabled={!num || isChecked}
                                     className={`
                                         w-full h-full flex items-center justify-center 
-                                        text-3xl font-bold transition-all duration-200 relative
-                                        ${isWiggling ? 'animate-wiggle' : isChecked ? '' : 'hover:bg-gray-50 text-[#014087]'}
+                                        text-3xl font-bold transition-colors duration-200 relative
+                                        ${isWiggling ? 'text-red-500 animate-wiggle' : isChecked ? '' : 'hover:bg-gray-50 text-[#014087]'}
                                     `}
                                 >
-                                    <span className={`relative z-10 ${isChecked ? 'text-[#014087]' : isWiggling ? 'text-red-500' : ''}`}>{num}</span>
+                                    <span className={`relative z-10 ${isChecked ? 'text-[#014087]' : ''}`}>{num}</span>
                                     {showMatchHint && (
                                         <div className="absolute inset-0 z-0 bg-[#DDF5F7] animate-hint-pulse" />
                                     )}
