@@ -27,17 +27,18 @@ const BingoCard = ({
                     const showMatchHint = showHint && isCurrentMatch;
 
                     // Determine classes based on state
-                    let buttonClass = "w-full h-full flex items-center justify-center text-3xl font-bold transition-colors duration-200 relative ";
+                    let buttonClass = "w-full h-full flex items-center justify-center text-3xl font-bold relative ";
                     let textClass = "relative z-10 ";
 
                     if (isWiggling) {
                         buttonClass += "text-red-500 animate-wiggle";
                         textClass += "text-red-500";
                     } else if (isChecked) {
+                        buttonClass += "transition-colors duration-200";
                         textClass += "text-[#014087]";
                     } else {
                         // Default / Hint state
-                        buttonClass += "hover:bg-gray-50 text-[#014087]";
+                        buttonClass += "transition-colors duration-200 hover:bg-gray-50 text-[#014087]";
                         textClass += "text-[#014087]";
                     }
 
