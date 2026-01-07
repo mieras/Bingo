@@ -18,7 +18,8 @@ function App() {
     skipOutcome,
     startGame,
     handleCardClick,
-    finishGame
+    finishGame,
+    skipToResult
   } = useBingoGame();
 
   const progress = (drawnBalls.length / 36) * 100;
@@ -32,7 +33,7 @@ function App() {
   return (
     <div className="App h-full w-full">
       {gameState === 'IDLE' && (
-        <StartScreen onStart={startGame} />
+        <StartScreen onStart={startGame} onSkipToResult={skipToResult} />
       )}
 
       {(gameState === 'PLAYING' || gameState === 'WON' || gameState === 'FINISHED') && (

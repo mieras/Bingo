@@ -5,12 +5,12 @@ const GameControls = ({ onSkip, isGameFinished, isSkipping }) => {
 
     return (
         <div
-            className="fixed bottom-0 left-0 right-0 h-32 pointer-events-none"
+            className="fixed right-0 bottom-0 left-0 h-32 pointer-events-none"
             style={{
                 background: 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 40%, rgba(255, 255, 255, 1) 70%)'
             }}
         >
-            <div className="flex items-end justify-center h-full px-3 pb-5 pointer-events-none">
+            <div className="flex justify-center items-end px-3 pb-5 h-full pointer-events-none">
                 <button
                     onClick={onSkip}
                     disabled={isSkipping}
@@ -21,7 +21,7 @@ const GameControls = ({ onSkip, isGameFinished, isSkipping }) => {
                         ${isSkipping ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 hover:shadow-xl active:scale-[0.98]'}
                     `}
                 >
-                    {isSkipping ? 'Resultaat ophalen...' : 'Skip naar uitslag'}
+                    {isSkipping ? 'Kaart controleren...' : 'Direct naar uitslag'}
                 </button>
             </div>
         </div>

@@ -9,6 +9,8 @@ import GameProgress from './game/GameProgress';
 import GameHistory from './game/GameHistory';
 import GameResult from './game/GameResult';
 import GameControls from './game/GameControls';
+import BouncingBall from './game/BouncingBall';
+import SkipTicker from './game/SkipTicker';
 
 const GameScreen = ({
     bingoCard,
@@ -82,13 +84,13 @@ const GameScreen = ({
     }, [prize, gameState]);
 
     return (
-        <div className="flex flex-col w-full h-dvh overflow-hidden transition-colors duration-500 relative" style={{ backgroundColor: panelColor }}>
+        <div className="flex overflow-hidden relative flex-col w-full transition-colors duration-500 h-dvh" style={{ backgroundColor: panelColor }}>
 
             <GameHeader />
 
-            <div className="flex-shrink-0 flex flex-col">
+            <div className="flex flex-col shrink-0">
                 {/* Bingo Card Container */}
-                <div className="flex-1 flex flex-col justify-center items-center">
+                <div className="flex flex-col flex-1 justify-center items-center">
                     <BingoCard
                         bingoCard={bingoCard}
                         checkedNumbers={checkedNumbers}
@@ -108,15 +110,20 @@ const GameScreen = ({
             {/* Draw History OR Result - Fluid Height */}
             <div
                 ref={historyRef}
-                className="flex-1 overflow-y-auto bg-white"
+                className="overflow-y-auto flex-1 bg-white"
                 style={{
                     WebkitOverflowScrolling: 'touch',
                 }}
             >
                 {isSkipping ? (
-                    <div className="flex flex-col items-center justify-center h-full animate-pulse">
-                        <div className="w-8 h-8 border-4 border-[#003884] border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p className="text-[#003884] font-bold uppercase tracking-wide text-sm">Resultaat ophalen...</p>
+                    <div className="flex flex-col justify-center items-center h-full">
+                        <BouncingBall
+                            ballNumber={currentBall || drawnBalls[drawnBalls.length - 1] || 1}
+                            ballColor={currentBall ? getBallColor(currentBall) : getBallColor(drawnBalls[drawnBalls.length - 1] || 1)}
+                        />
+                        <div className="px-4 mt-8 w-full max-w-md">
+                            <SkipTicker drawnBallsCount={drawnBalls.length} />
+                        </div>
                     </div>
                 ) : isGameFinished ? (
                     <GameResult prize={prize} />
