@@ -372,6 +372,116 @@ export const useBingoGame = () => {
 
     }, [gameState, drawnBalls, bingoCard, checkedNumbers, maxBalls, isSkipping]);
 
+    // Functie om direct naar resultaat te gaan zonder het spel te spelen
+    const skipToResult = useCallback(() => {
+        if (gameState !== 'IDLE') return;
+
+        // 50% chance to win
+        const isWinner = Math.random() < 0.5;
+
+        // Always draw all 36 balls
+        const currentMaxBalls = MAX_DRAWN_BALLS;
+        setMaxBalls(currentMaxBalls);
+
+        // Step 1: Generate a completely random deck of all 45 balls
+        const allNumbers = Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1);
+        const deck = allNumbers.sort(() => Math.random() - 0.5);
+
+        // Step 2: The last 36 balls will be drawn (pop() takes from end)
+        // We need to reverse this to get the order in which they're drawn
+        const ballsToDraw = deck.slice(-36).reverse(); // Reverse because pop() takes from end
+        const notDrawnBalls = deck.slice(0, 9);
+
+        // Step 3: Generate the card based on win/loss
+        let cardNumbers;
+
+        if (isWinner) {
+            // Winner: All 15 card numbers come from the 36 balls that will be drawn
+            const shuffledDrawn = [...ballsToDraw].sort(() => Math.random() - 0.5);
+            cardNumbers = shuffledDrawn.slice(0, 15);
+        } else {
+            // Loser: 14 numbers from drawn balls + 1-3 numbers from not-drawn balls
+            const numMissing = Math.floor(Math.random() * 3) + 1;
+
+            const shuffledDrawn = [...ballsToDraw].sort(() => Math.random() - 0.5);
+            const shuffledNotDrawn = [...notDrawnBalls].sort(() => Math.random() - 0.5);
+
+            const presentNums = shuffledDrawn.slice(0, 15 - numMissing);
+            const missingNums = shuffledNotDrawn.slice(0, numMissing);
+
+            cardNumbers = [...presentNums, ...missingNums];
+        }
+
+        // Step 4: Create the 4x4 grid with empty slot at index 10
+        const emptyIndex = 10;
+        const grid = [];
+        let numIdx = 0;
+        for (let i = 0; i < 16; i++) {
+            if (i === emptyIndex) {
+                grid.push(null);
+            } else {
+                grid.push(cardNumbers[numIdx++]);
+            }
+        }
+        setBingoCard(grid);
+
+        // Check if won based on all drawn balls
+        const numbersToWin = grid.filter(n => n !== null);
+        const isWin = numbersToWin.every(n => ballsToDraw.includes(n));
+
+        let outcome = 'FINISHED';
+        let wonPrize = null;
+        let finalDrawnBalls = ballsToDraw;
+
+        if (isWin) {
+            // Find the index of the last number needed to complete the card
+            let maxIndex = -1;
+            numbersToWin.forEach(num => {
+                const idx = ballsToDraw.indexOf(num);
+                if (idx > maxIndex) {
+                    maxIndex = idx;
+                }
+            });
+
+            outcome = 'WON';
+            // If win, we stop at the winning ball
+            finalDrawnBalls = ballsToDraw.slice(0, maxIndex + 1);
+            
+            // Calculate Prize based on the number of balls needed
+            const ballsCount = maxIndex + 1;
+            const lookupCount = Math.max(ballsCount, 19);
+            wonPrize = PRIZES.find(p => p.balls === lookupCount);
+        }
+
+        // Calculate final checked numbers
+        const finalChecked = new Set();
+        grid.forEach(num => {
+            if (num && finalDrawnBalls.includes(num)) {
+                finalChecked.add(num);
+            }
+        });
+
+        // Set all state directly
+        setDrawnBalls(finalDrawnBalls);
+        setCheckedNumbers(finalChecked);
+        setPrize(wonPrize);
+        setGameState(outcome);
+
+        // Create history for all drawn balls (in reverse order, newest first)
+        const historyItems = finalDrawnBalls.map((ball, index) => {
+            const ballIndex = index + 1;
+            const prizeInfo = PRIZES.find(p => p.balls === ballIndex);
+            return {
+                ball: ball,
+                index: ballIndex,
+                prize: prizeInfo,
+                timestamp: Date.now()
+            };
+        });
+        setHistory(historyItems.reverse());
+
+    }, [gameState]);
+
     return {
         gameState,
         bingoCard,
@@ -385,6 +495,7 @@ export const useBingoGame = () => {
         skipOutcome: skipTarget ? { outcome: skipTarget.outcome, prize: skipTarget.prize } : null,
         startGame,
         handleCardClick,
-        finishGame
+        finishGame,
+        skipToResult
     };
 };
