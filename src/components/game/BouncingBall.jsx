@@ -6,11 +6,11 @@ const BouncingBall = ({ ballNumber, ballColor }) => {
   const color = ballColor || '#AA167C';
 
   return (
-    <div className="flex flex-col items-center justify-center" role="img" aria-label={`Bal nummer ${number} wordt getrokken`}>
-      <div className="relative flex items-center justify-center" style={{ height: '7em' }}>
+    <div className="flex flex-col justify-center items-center" role="img" aria-label={`Bal nummer ${number} wordt getrokken`}>
+      <div className="flex relative justify-center items-center" style={{ height: '7em' }}>
         {/* Bouncing Ball */}
         <div
-          className="relative z-10 rounded-full flex items-center justify-center shadow-lg"
+          className="flex relative z-10 justify-center items-center rounded-full shadow-lg"
           style={{
             width: '3.5em',
             height: '3.5em',
@@ -26,7 +26,7 @@ const BouncingBall = ({ ballNumber, ballColor }) => {
             <div className="w-2.5 h-[1.5px] bg-gray-800 mt-[1px] rounded-full opacity-80"></div>
           </div>
         </div>
-        
+
         {/* Shadow */}
         <div
           className="absolute bottom-0"
@@ -38,7 +38,7 @@ const BouncingBall = ({ ballNumber, ballColor }) => {
           }}
         />
       </div>
-      
+
       <style>{`
         @keyframes bounce-ball {
           0% {

@@ -10,6 +10,8 @@ export const useBingoGame = () => {
     const [history, setHistory] = useState([]); // { ball, index, prize, isBingo }
     const [prize, setPrize] = useState(null);
     const [wigglingNumber, setWigglingNumber] = useState(null);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [skipTransition, setSkipTransition] = useState(false);
 
     const timerRef = useRef(null);
     const drawDeckRef = useRef([]);
@@ -376,8 +378,9 @@ export const useBingoGame = () => {
     const skipToResult = useCallback(() => {
         if (gameState !== 'IDLE') return;
 
-        // 50% chance to win
+        // 50% chance to win - gebruik hetzelfde mechanisme als startGame
         const isWinner = Math.random() < 0.5;
+        console.log('🎲 Skip to result - isWinner:', isWinner);
 
         // Always draw all 36 balls
         const currentMaxBalls = MAX_DRAWN_BALLS;
@@ -387,23 +390,23 @@ export const useBingoGame = () => {
         const allNumbers = Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1);
         const deck = allNumbers.sort(() => Math.random() - 0.5);
 
-        // Step 2: The last 36 balls will be drawn (pop() takes from end)
-        // We need to reverse this to get the order in which they're drawn
-        const ballsToDraw = deck.slice(-36).reverse(); // Reverse because pop() takes from end
-        const notDrawnBalls = deck.slice(0, 9);
+        // Step 2: The first 36 balls will be drawn (same logic as startGame)
+        // In startGame: deck.slice(-36) are the balls that will be drawn (pop() takes from end)
+        const drawnBalls = deck.slice(-36); // These will be drawn
+        const notDrawnBalls = deck.slice(0, 9); // These won't be drawn
 
-        // Step 3: Generate the card based on win/loss
+        // Step 3: Generate the card based on win/loss (same logic as startGame)
         let cardNumbers;
 
         if (isWinner) {
             // Winner: All 15 card numbers come from the 36 balls that will be drawn
-            const shuffledDrawn = [...ballsToDraw].sort(() => Math.random() - 0.5);
+            const shuffledDrawn = [...drawnBalls].sort(() => Math.random() - 0.5);
             cardNumbers = shuffledDrawn.slice(0, 15);
         } else {
             // Loser: 14 numbers from drawn balls + 1-3 numbers from not-drawn balls
-            const numMissing = Math.floor(Math.random() * 3) + 1;
+            const numMissing = Math.floor(Math.random() * 3) + 1; // 1-3 missing
 
-            const shuffledDrawn = [...ballsToDraw].sort(() => Math.random() - 0.5);
+            const shuffledDrawn = [...drawnBalls].sort(() => Math.random() - 0.5);
             const shuffledNotDrawn = [...notDrawnBalls].sort(() => Math.random() - 0.5);
 
             const presentNums = shuffledDrawn.slice(0, 15 - numMissing);
@@ -425,19 +428,29 @@ export const useBingoGame = () => {
         }
         setBingoCard(grid);
 
-        // Check if won based on all drawn balls
+        // Step 5: Determine win/loss based on card numbers and drawn balls
+        // Check if all card numbers (except null) are in the drawn balls
         const numbersToWin = grid.filter(n => n !== null);
-        const isWin = numbersToWin.every(n => ballsToDraw.includes(n));
+        const isWin = numbersToWin.every(n => drawnBalls.includes(n));
+
+        console.log('🎲 Skip to result - isWin check:', {
+            isWinner,
+            isWin,
+            cardNumbers: cardNumbers.length,
+            numbersToWin: numbersToWin.length,
+            drawnBalls: drawnBalls.length,
+            missingNumbers: numbersToWin.filter(n => !drawnBalls.includes(n))
+        });
 
         let outcome = 'FINISHED';
         let wonPrize = null;
-        let finalDrawnBalls = ballsToDraw;
+        let finalDrawnBalls = drawnBalls;
 
         if (isWin) {
             // Find the index of the last number needed to complete the card
             let maxIndex = -1;
             numbersToWin.forEach(num => {
-                const idx = ballsToDraw.indexOf(num);
+                const idx = drawnBalls.indexOf(num);
                 if (idx > maxIndex) {
                     maxIndex = idx;
                 }
@@ -445,12 +458,15 @@ export const useBingoGame = () => {
 
             outcome = 'WON';
             // If win, we stop at the winning ball
-            finalDrawnBalls = ballsToDraw.slice(0, maxIndex + 1);
+            finalDrawnBalls = drawnBalls.slice(0, maxIndex + 1);
             
             // Calculate Prize based on the number of balls needed
             const ballsCount = maxIndex + 1;
             const lookupCount = Math.max(ballsCount, 19);
             wonPrize = PRIZES.find(p => p.balls === lookupCount);
+            console.log('🎲 Skip to result - WON:', { ballsCount, lookupCount, prize: wonPrize });
+        } else {
+            console.log('🎲 Skip to result - LOST');
         }
 
         // Calculate final checked numbers
@@ -465,6 +481,7 @@ export const useBingoGame = () => {
         setDrawnBalls(finalDrawnBalls);
         setCheckedNumbers(finalChecked);
         setPrize(wonPrize);
+        setSkipTransition(true); // Skip transition voor direct naar result
         setGameState(outcome);
 
         // Create history for all drawn balls (in reverse order, newest first)
@@ -482,6 +499,45 @@ export const useBingoGame = () => {
 
     }, [gameState]);
 
+    // Transition effect: wanneer game eindigt, start transition
+    useEffect(() => {
+        if (gameState === 'WON' || gameState === 'FINISHED') {
+            if (skipTransition) {
+                // Skip transition voor direct naar result
+                setIsTransitioning(false);
+                setSkipTransition(false);
+            } else {
+                setIsTransitioning(true);
+                // Na 1.5 seconden transition compleet
+                const timer = setTimeout(() => {
+                    setIsTransitioning(false);
+                }, 1500);
+                return () => clearTimeout(timer);
+            }
+        } else {
+            setIsTransitioning(false);
+            setSkipTransition(false);
+        }
+    }, [gameState, skipTransition]);
+
+    // Reset game naar IDLE state
+    const resetGame = useCallback(() => {
+        clearInterval(timerRef.current);
+        setGameState('IDLE');
+        setBingoCard([]);
+        setDrawnBalls([]);
+        setCurrentBall(null);
+        setCheckedNumbers(new Set());
+        setHistory([]);
+        setPrize(null);
+        setWigglingNumber(null);
+        setIsTransitioning(false);
+        setSkipTransition(false);
+        setIsSkipping(false);
+        setSkipTarget(null);
+        drawDeckRef.current = [];
+    }, []);
+
     return {
         gameState,
         bingoCard,
@@ -492,10 +548,12 @@ export const useBingoGame = () => {
         prize,
         wigglingNumber,
         isSkipping,
+        isTransitioning,
         skipOutcome: skipTarget ? { outcome: skipTarget.outcome, prize: skipTarget.prize } : null,
         startGame,
         handleCardClick,
         finishGame,
-        skipToResult
+        skipToResult,
+        resetGame
     };
 };
