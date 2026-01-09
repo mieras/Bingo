@@ -1,7 +1,7 @@
 import React from 'react';
-import GameHeader from './game/GameHeader';
 import ContentWrapper from './ContentWrapper';
 import SocialProofCarousel from './SocialProofCarousel';
+import GameHeader from './game/GameHeader';
 
 // Figma asset URLs (geldig voor 7 dagen)
 const CHEVRON_RIGHT_URL = 'https://www.figma.com/api/mcp/asset/d362a218-9aab-4fac-b453-b804ea95063f';
@@ -14,14 +14,12 @@ import heroImage from '../assets/hero-image.png';
 // import howItWorksImage from '../assets/how-it-works.jpg';
 const HOW_IT_WORKS_PLACEHOLDER = 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800&h=600&fit=crop';
 
-const StartScreen = ({ onStart, onSkipToResult }) => {
+const StartScreen = ({ onStart, onSkipToResult, onClose }) => {
   return (
     <div className="bg-white overflow-clip relative rounded-tl-[12px] rounded-tr-[12px] size-full flex flex-col">
-      {/* Header Section - Using GameHeader component */}
-      <GameHeader />
-
-
-
+      {/* Header Section - alleen tonen wanneer onClose beschikbaar is (in overlay) */}
+      {onClose && <GameHeader onClose={onClose} />}
+      
       {/* Content Section */}
       <div className="flex overflow-y-auto flex-col flex-1 items-center w-full bg-white">
         {/* Hero Image Section */}

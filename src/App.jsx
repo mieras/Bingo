@@ -1,10 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useBingoGame } from './hooks/useBingoGame';
-import StartScreen from './components/StartScreen';
+import MailScreen from './components/MailScreen';
+import AccountHomeScreen from './components/AccountHomeScreen';
+import BingoOverviewScreen from './components/BingoOverviewScreen';
 import GameScreen from './components/GameScreen';
-import ResultScreen from './components/ResultScreen';
+import StartScreen from './components/StartScreen';
+import WonScreen from './components/WonScreen';
+import LostScreen from './components/LostScreen';
+import LoadingTransition from './components/LoadingTransition';
 
 function App() {
+  // Routing state
+  const [currentPage, setCurrentPage] = useState('mail'); // 'mail' | 'account' | 'bingo' | 'result'
+  const [showGameOverlay, setShowGameOverlay] = useState(false);
+  const [resultType, setResultType] = useState(null); // 'won' | 'lost' | null
+
   const {
     gameState,
     bingoCard,
@@ -16,10 +26,12 @@ function App() {
     wigglingNumber,
     isSkipping,
     skipOutcome,
+    isTransitioning,
     startGame,
     handleCardClick,
     finishGame,
-    skipToResult
+    skipToResult,
+    resetGame
   } = useBingoGame();
 
   const progress = (drawnBalls.length / 36) * 100;
@@ -28,33 +40,158 @@ function App() {
   const panelColors = ['#AA167C', '#F39200', '#E73358', '#94C11F', '#009CBE'];
   const panelColor = useMemo(() => {
     return panelColors[Math.floor(Math.random() * panelColors.length)];
-  }, [gameState === 'IDLE']); // Reset bij nieuwe game
+  }, [showGameOverlay]); // Reset bij nieuwe game overlay
+
+  // Navigatie functies
+  const navigateToAccount = () => {
+    setCurrentPage('account');
+    setShowGameOverlay(false);
+  };
+
+  const navigateToBingo = () => {
+    setCurrentPage('bingo');
+    setShowGameOverlay(false);
+  };
+
+  const navigateToMail = () => {
+    setCurrentPage('mail');
+    setShowGameOverlay(false);
+  };
+
+  const openGameOverlay = () => {
+    setShowGameOverlay(true);
+    // Start game niet direct - laat StartScreen eerst tonen
+  };
+
+  const closeGameOverlay = () => {
+    // Als het spel nog bezig is (PLAYING), reset het spel
+    if (gameState === 'PLAYING') {
+      resetGame();
+    }
+    setShowGameOverlay(false);
+    setResultType(null);
+    // Blijf op bingo pagina (currentPage blijft 'bingo')
+  };
+
+  const handleStartGame = () => {
+    startGame();
+  };
+
+  // Handle game state changes - transition naar result scherm in overlay
+  useEffect(() => {
+    if (gameState === 'WON' && !isTransitioning && showGameOverlay) {
+      setResultType('won');
+    } else if (gameState === 'FINISHED' && !isTransitioning && showGameOverlay) {
+      setResultType('lost');
+    }
+  }, [gameState, isTransitioning, showGameOverlay]);
+
+  // Handle back from result screen
+  const handleBackFromResult = () => {
+    setResultType(null);
+    setCurrentPage('bingo');
+  };
 
   return (
     <div className="App h-full w-full flex items-center justify-center">
-      <div className="w-full max-w-[400px] h-full mx-auto">
-        {gameState === 'IDLE' && (
-          <StartScreen onStart={startGame} onSkipToResult={skipToResult} />
+      <div className="w-full max-w-[400px] h-full mx-auto relative">
+        {/* Main Pages */}
+        {currentPage === 'mail' && (
+          <MailScreen
+            onNavigateToAccount={navigateToAccount}
+            onNavigateToBingo={navigateToBingo}
+            onPlayNow={openGameOverlay}
+          />
         )}
 
-        {(gameState === 'PLAYING' || gameState === 'WON' || gameState === 'FINISHED') && (
-          <GameScreen
-            bingoCard={bingoCard}
-            currentBall={currentBall}
-            checkedNumbers={checkedNumbers}
-            history={history}
-            drawnBalls={drawnBalls}
-            wigglingNumber={wigglingNumber}
-            onCardClick={handleCardClick}
-            onSkip={finishGame}
-            isSkipping={isSkipping}
-            skipOutcome={skipOutcome}
-            progress={progress}
-            panelColor={panelColor}
-            gameState={gameState}
-            prize={prize}
-            onBackToOverview={() => window.location.reload()}
+        {currentPage === 'account' && (
+          <AccountHomeScreen
+            onNavigateToMail={navigateToMail}
+            onNavigateToBingo={navigateToBingo}
           />
+        )}
+
+        {currentPage === 'bingo' && (
+          <BingoOverviewScreen
+            onNavigateToMail={navigateToMail}
+            onPlayNow={openGameOverlay}
+          />
+        )}
+
+        {/* Game Overlay - bevat intro, spel en uitslag - Fullscreen */}
+        {showGameOverlay && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              onClick={closeGameOverlay}
+              aria-hidden="true"
+            />
+            {/* Fullscreen Container */}
+            <div className="fixed inset-0 z-50 pointer-events-none">
+              <div 
+                className="w-full h-full bg-white pointer-events-auto overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Intro Screen (StartScreen) - wanneer gameState === 'IDLE' */}
+                {gameState === 'IDLE' && !isTransitioning && (
+                  <StartScreen 
+                    onStart={handleStartGame} 
+                    onSkipToResult={() => {
+                      skipToResult();
+                      // Result wordt automatisch getoond via useEffect
+                    }}
+                    onClose={closeGameOverlay}
+                  />
+                )}
+
+                {/* Game Screen - wanneer gameState === 'PLAYING' */}
+                {gameState === 'PLAYING' && (
+                  <GameScreen
+                    bingoCard={bingoCard}
+                    currentBall={currentBall}
+                    checkedNumbers={checkedNumbers}
+                    history={history}
+                    drawnBalls={drawnBalls}
+                    wigglingNumber={wigglingNumber}
+                    onCardClick={handleCardClick}
+                    onSkip={finishGame}
+                    isSkipping={isSkipping}
+                    skipOutcome={skipOutcome}
+                    progress={progress}
+                    panelColor={panelColor}
+                    gameState={gameState}
+                    prize={prize}
+                    isOverlay={false}
+                    onClose={closeGameOverlay}
+                    isTransitioning={isTransitioning}
+                  />
+                )}
+
+                {/* Loading Transition - tijdens transition */}
+                {isTransitioning && (
+                  <LoadingTransition />
+                )}
+
+                {/* Result Screens in overlay - wanneer gameState === 'WON' of 'FINISHED' en niet meer transitioning */}
+                {!isTransitioning && gameState === 'WON' && resultType === 'won' && prize && (
+                  <WonScreen
+                    prize={prize}
+                    drawnBalls={drawnBalls}
+                    onBackToBingo={closeGameOverlay}
+                    showHeader={true}
+                  />
+                )}
+
+                {!isTransitioning && gameState === 'FINISHED' && resultType === 'lost' && (
+                  <LostScreen
+                    onBackToBingo={closeGameOverlay}
+                    showHeader={true}
+                  />
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

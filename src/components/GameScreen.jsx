@@ -10,8 +10,7 @@ import GameHistory from './game/GameHistory';
 import GameControls from './game/GameControls';
 import BouncingBall from './game/BouncingBall';
 import SkipTicker from './game/SkipTicker';
-import WonOverlay from './WonOverlay';
-import LostOverlay from './LostOverlay';
+import LoadingTransition from './LoadingTransition';
 
 const GameScreen = ({
     bingoCard,
@@ -27,7 +26,9 @@ const GameScreen = ({
     panelColor,
     gameState,
     prize,
-    onBackToOverview
+    isOverlay = false,
+    onClose,
+    isTransitioning = false
 }) => {
     const isGameFinished = gameState === 'WON' || gameState === 'FINISHED';
 
@@ -85,119 +86,124 @@ const GameScreen = ({
         }
     }, [prize, gameState]);
 
-    // Show overlay when game is finished
-    const showOverlay = gameState === 'WON' || gameState === 'FINISHED';
-    const [overlayClosed, setOverlayClosed] = useState(false);
-
-    // Reset overlay closed state when game state changes
-    useEffect(() => {
-        if (showOverlay) {
-            setOverlayClosed(false);
-        }
-    }, [showOverlay]);
-
-    const handleCloseOverlay = () => {
-        setOverlayClosed(true);
-    };
-
-    const handleBackToOverview = () => {
-        if (onBackToOverview) {
-            onBackToOverview();
-        } else {
-            // Fallback: reload page
-            window.location.reload();
-        }
-    };
-
-    // Header close button handler - does nothing when overlay is active
+    // Header close button handler
     const handleHeaderClose = () => {
-        // Do nothing when overlay is active
-        if (showOverlay && !overlayClosed) {
-            return;
+        if (onClose) {
+            onClose();
         }
-        // Could add other functionality here if needed when no overlay is active
     };
 
-    return (
-        <div className="flex overflow-hidden relative flex-col w-full transition-colors duration-500 h-dvh" style={{ backgroundColor: panelColor }}>
+    // Escape key handler - werkt altijd wanneer onClose beschikbaar is
+    useEffect(() => {
+        if (!onClose) return;
+
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [onClose]);
+
+    // Game content
+    const gameContent = (
+        <div className="flex overflow-hidden relative flex-col w-full transition-colors duration-500 h-full" style={{ backgroundColor: panelColor }}>
             <GameHeader 
                 onClose={handleHeaderClose}
             />
 
-            {/* Overlay for Won/Lost - Inside container, below header */}
-            {showOverlay && !overlayClosed && (
-                <>
-                    {gameState === 'WON' && prize ? (
-                        <WonOverlay
-                            prize={prize}
-                            drawnBalls={drawnBalls}
-                            onClose={handleCloseOverlay}
-                            onBackToOverview={handleBackToOverview}
-                        />
-                    ) : (
-                        <LostOverlay
-                            onClose={handleCloseOverlay}
-                            onBackToOverview={handleBackToOverview}
-                        />
-                    )}
-                </>
+            {/* Loading Transition */}
+            {isTransitioning && (
+                <LoadingTransition />
             )}
 
-            <div className="flex flex-col shrink-0">
-                {/* Bingo Card Container */}
-                <div className="flex flex-col flex-1 justify-center items-center">
-                    <BingoCard
-                        bingoCard={bingoCard}
-                        checkedNumbers={checkedNumbers}
-                        currentBall={currentBall}
-                        wigglingNumber={wigglingNumber}
-                        showHint={showHint}
-                        onCardClick={onCardClick}
-                    />
-                </div>
-
-                <GameProgress
-                    drawnBalls={drawnBalls}
-                    progress={progress}
-                />
-            </div>
-
-            {/* Draw History - Fluid Height */}
-            <div
-                ref={historyRef}
-                className="overflow-y-auto flex-1 bg-white"
-                style={{
-                    WebkitOverflowScrolling: 'touch',
-                }}
-                role="region"
-                aria-label="Spel geschiedenis"
-            >
-                {isSkipping ? (
-                    <div className="flex flex-col justify-center items-center h-full">
-                        <BouncingBall
-                            ballNumber={currentBall || drawnBalls[drawnBalls.length - 1] || 1}
-                            ballColor={currentBall ? getBallColor(currentBall) : getBallColor(drawnBalls[drawnBalls.length - 1] || 1)}
-                        />
-                        <div className="px-4 mt-8 w-full max-w-md">
-                            <SkipTicker drawnBallsCount={drawnBalls.length} />
+            {/* Hide game content during transition */}
+            {!isTransitioning && (
+                <>
+                    <div className="flex flex-col shrink-0">
+                        {/* Bingo Card Container */}
+                        <div className="flex flex-col flex-1 justify-center items-center">
+                            <BingoCard
+                                bingoCard={bingoCard}
+                                checkedNumbers={checkedNumbers}
+                                currentBall={currentBall}
+                                wigglingNumber={wigglingNumber}
+                                showHint={showHint}
+                                onCardClick={onCardClick}
+                            />
                         </div>
-                    </div>
-                ) : (
-                    <GameHistory
-                        history={history}
-                        getBallColor={getBallColor}
-                        isGameFinished={isGameFinished}
-                    />
-                )}
-            </div>
 
-            <GameControls
-                onSkip={onSkip}
-                isGameFinished={isGameFinished || isSkipping}
-                isSkipping={isSkipping}
-            />
+                        <GameProgress
+                            drawnBalls={drawnBalls}
+                            progress={progress}
+                        />
+                    </div>
+
+                    {/* Draw History - Fluid Height */}
+                    <div
+                        ref={historyRef}
+                        className="overflow-y-auto flex-1 bg-white"
+                        style={{
+                            WebkitOverflowScrolling: 'touch',
+                        }}
+                        role="region"
+                        aria-label="Spel geschiedenis"
+                    >
+                        {isSkipping ? (
+                            <div className="flex flex-col justify-center items-center h-full">
+                                <BouncingBall
+                                    ballNumber={currentBall || drawnBalls[drawnBalls.length - 1] || 1}
+                                    ballColor={currentBall ? getBallColor(currentBall) : getBallColor(drawnBalls[drawnBalls.length - 1] || 1)}
+                                />
+                                <div className="px-4 mt-8 w-full max-w-md">
+                                    <SkipTicker drawnBallsCount={drawnBalls.length} />
+                                </div>
+                            </div>
+                        ) : (
+                            <GameHistory
+                                history={history}
+                                getBallColor={getBallColor}
+                                isGameFinished={isGameFinished}
+                            />
+                        )}
+                    </div>
+
+                    <GameControls
+                        onSkip={onSkip}
+                        isGameFinished={isGameFinished || isSkipping}
+                        isSkipping={isSkipping}
+                    />
+                </>
+            )}
         </div>
     );
+
+    // Render as overlay or full screen
+    if (isOverlay) {
+        return (
+            <>
+                {/* Backdrop */}
+                <div 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                    onClick={onClose}
+                    aria-hidden="true"
+                />
+                {/* Modal Container */}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+                    <div 
+                        className="w-full max-w-[400px] h-full max-h-[90vh] bg-white rounded-lg shadow-2xl pointer-events-auto overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {gameContent}
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    return gameContent;
 };
 
 export default GameScreen;
