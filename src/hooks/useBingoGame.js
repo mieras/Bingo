@@ -100,23 +100,31 @@ export const useBingoGame = () => {
 
     const drawNextBall = useCallback(() => {
         // Auto-check previous ball if it was on card and not checked (only when new ball is drawn)
+        // We houden bij welke nummers er ECHT checked zijn (inclusief auto-check)
+        let updatedChecked = new Set(checkedNumbers);
         if (currentBall && bingoCard.includes(currentBall) && !checkedNumbers.has(currentBall)) {
-            setCheckedNumbers(prev => new Set(prev).add(currentBall));
+            updatedChecked.add(currentBall);
+            setCheckedNumbers(updatedChecked);
         }
 
         // Stop if deck is empty
         if (drawDeckRef.current.length === 0) {
             const numbersToWin = bingoCard.filter(n => n !== null);
-            const isWin = numbersToWin.every(n => checkedNumbers.has(n));
+            const isWin = numbersToWin.every(n => updatedChecked.has(n));
             
             if (isWin) {
                 if (timerRef.current) {
                     clearTimeout(timerRef.current);
                 }
-                setGameState('WON');
+                setIsCelebrating(true);
                 const lookupCount = Math.max(drawnBalls.length, 19);
                 const wonPrize = PRIZES.find(p => p.balls === lookupCount);
                 setPrize(wonPrize);
+                
+                setTimeout(() => {
+                    setIsCelebrating(false);
+                    setGameState('WON');
+                }, 2000);
             } else {
                 if (timerRef.current) {
                     clearTimeout(timerRef.current);
@@ -135,29 +143,36 @@ export const useBingoGame = () => {
         setDrawnBalls(prev => [...prev, nextBall]);
         setCurrentBall(nextBall);
 
-        // Don't auto-check the new ball - user must check it manually
-        // It will be auto-checked when the next ball is drawn if user didn't check it
-        let updatedChecked = checkedNumbers;
-
         // Check if this is the last ball (36/36) and if we won
         // Note: updatedChecked includes the auto-checked previous ball
         const isLastBall = newDrawn.length >= maxBalls;
         if (isLastBall) {
-            // Check win condition with the updated checked numbers (includes auto-checked previous ball)
+            // Auto-check de laatste bal ook als die op de kaart staat
+            if (bingoCard.includes(nextBall)) {
+                updatedChecked.add(nextBall);
+            }
+            
+            // Check win condition with the updated checked numbers (includes auto-checked previous + last ball)
             const numbersToWin = bingoCard.filter(n => n !== null);
             const isWin = numbersToWin.every(n => updatedChecked.has(n));
             
             if (isWin) {
-                // WIN! Direct naar won scherm
+                // WIN! Start celebration
                 if (timerRef.current) {
                     clearTimeout(timerRef.current);
                 }
-                setGameState('WON');
+                setCheckedNumbers(updatedChecked);
+                setIsCelebrating(true);
                 const lookupCount = Math.max(newDrawn.length, 19);
                 const wonPrize = PRIZES.find(p => p.balls === lookupCount);
                 setPrize(wonPrize);
+                
+                setTimeout(() => {
+                    setIsCelebrating(false);
+                    setGameState('WON');
+                }, 2000);
             } else {
-                // No win, game finished - wacht DRAW_INTERVAL zodat gebruiker de laatste bal kan zien/afvinken
+                // No win, game finished - wacht DRAW_INTERVAL zodat gebruiker de laatste bal kan zien
                 if (timerRef.current) {
                     clearTimeout(timerRef.current);
                 }
@@ -395,6 +410,31 @@ export const useBingoGame = () => {
                 }
             });
 
+            // Check win condition DIRECT met de nieuwe checked numbers
+            const isWin = checkWin(newChecked);
+
+            if (isWin) {
+                // WIN! Stop het spel en ga direct naar celebration
+                if (timerRef.current) {
+                    clearTimeout(timerRef.current);
+                }
+                setCheckedNumbers(newChecked);
+                setIsCelebrating(true);
+                
+                // Calculate prize based on drawnBalls count
+                const count = drawnBalls.length;
+                const lookupCount = Math.max(count, 19);
+                const wonPrize = PRIZES.find(p => p.balls === lookupCount);
+                setPrize(wonPrize);
+                
+                // Na 2 seconden celebration, ga naar won screen
+                setTimeout(() => {
+                    setIsCelebrating(false);
+                    setGameState('WON');
+                }, 2000);
+                return; // Stop hier, trek geen nieuwe bal
+            }
+
             setCheckedNumbers(newChecked);
 
             // Direct de volgende bal trekken als je handmatig afvinkt
@@ -415,7 +455,7 @@ export const useBingoGame = () => {
             setWigglingNumber(number);
             setTimeout(() => setWigglingNumber(null), 500);
         }
-    }, [gameState, isSkipping, drawnBalls, checkedNumbers, bingoCard, getInterval, drawNextBall, maxBalls]);
+    }, [gameState, isSkipping, drawnBalls, checkedNumbers, bingoCard, checkWin, getInterval, drawNextBall, maxBalls]);
 
     const finishGame = useCallback(() => {
         if (gameState !== 'PLAYING' || isSkipping) return;
