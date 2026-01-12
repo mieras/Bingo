@@ -63,8 +63,8 @@ const LostScreen = ({ onBackToBingo, showHeader = false, bingoCard = [], checked
 
           {/* Mini Bingo Card - rechtsboven, half over header */}
           {bingoCard.length > 0 && (
-            <MiniCard 
-              bingoCard={bingoCard} 
+            <MiniCard
+              bingoCard={bingoCard}
               checkedNumbers={checkedNumbers}
               animateChecks={true}
               drawnBalls={drawnBalls}

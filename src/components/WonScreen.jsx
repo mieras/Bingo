@@ -74,8 +74,8 @@ const WonScreen = ({ prize, drawnBalls, onBackToBingo, showHeader = false, bingo
 
           {/* Mini Bingo Card - rechtsboven, half over header */}
           {bingoCard.length > 0 && (
-            <MiniCard 
-              bingoCard={bingoCard} 
+            <MiniCard
+              bingoCard={bingoCard}
               checkedNumbers={checkedNumbers}
               animateChecks={true}
               drawnBalls={drawnBalls}
